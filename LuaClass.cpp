@@ -146,13 +146,14 @@ bool LuaClass::UnregisterObject(lua_State* L, MT metatable, UD userdata, const c
 
 bool LuaClass::RegisterArrayProperty(lua_State* L, MT metatable, UD userdata, const char* propertyname, lua_CFunction getfunction, lua_CFunction setfunction, lua_CFunction rawgetter)
 {
-	int top = lua_gettop(L);
+	int xtop = lua_gettop(L);
 	std::string pnm(propertyname);
 	pnm[0] = toupper(pnm[0]);
 	//Add with uppercase first letter
 	lua_pushstring(L, pnm.c_str());
 	lua_newtable(L);
-	top = lua_gettop(L);
+	int top = lua_gettop(L);
+
 	LuaClassArray::CreateMetaTable(L, userdata, getfunction, setfunction, rawgetter);
 	lua_setmetatable(L, top);
 	lua_settable(L, metatable);
@@ -160,10 +161,14 @@ bool LuaClass::RegisterArrayProperty(lua_State* L, MT metatable, UD userdata, co
 	lua_pushstring(L, pnm.c_str());
 	if (lua_gettable(L, metatable) == LUA_TTABLE)
 	{
+		lua_pushvalue(L, -1);
 		pnm[0] = tolower(pnm[0]);
 		lua_setfield(L, metatable, pnm.c_str());
+		lua_pop(L, 1);
 	}
-	top = lua_gettop(L);
+
+	xtop = lua_gettop(L);
+	lua_settop(L, xtop);
 	return true;
 }
 
@@ -241,6 +246,10 @@ int LuaClass::Index(lua_State* L)
 				//The getter functions must load the value to the lua stack when called
 				lua_call(L, 0, 1);
 				return 1;
+			}
+			else if (lua_istable(L, -1))
+			{
+				
 			}
 			else //return the table that was stored in the metatable (so undo the result of getting __get)
 				//lua_pop(L, 1);

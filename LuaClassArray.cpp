@@ -1,16 +1,21 @@
 #include "LuaClassArray.h"
+#include <cassert>
 
 int LuaClassArray::CreateMetaTable(lua_State* L, UD userdata, lua_CFunction getArrayFunc, lua_CFunction setArrayFunc, lua_CFunction rawgetter)
 {
     lua_newtable(L);
     int top = lua_gettop(L);
 
-    lua_pushstring(L, "__index");
-    lua_pushvalue(L, userdata);
-    lua_pushcfunction(L, getArrayFunc);
-    lua_pushcfunction(L, rawgetter);
-    lua_pushcclosure(L, Index, 3);
-    lua_settable(L, top);
+#if _DEBUG
+    assert(lua_type(L, userdata) == LUA_TUSERDATA);
+#endif
+    lua_pushstring(L, "__index"); // key
+    lua_pushvalue(L, userdata); // upvalue #1
+    lua_pushcfunction(L, getArrayFunc); // upvalue #2
+    lua_pushcfunction(L, rawgetter); // upvalue #3
+    lua_pushcclosure(L, Index, 3); // final value
+    lua_settable(L, top); // table[key] = closure
+
     if (setArrayFunc)
     {
         lua_pushstring(L, "__newindex");
